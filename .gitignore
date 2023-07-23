@@ -1,0 +1,7 @@
+# Ignore config file
+/config.php
+/test*
+
+# Ignoring directories
+# Both the directory itself and its contents will be ignored.
+test/
