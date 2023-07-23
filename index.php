@@ -236,7 +236,7 @@
 	</div><!-- END section -->
 	<div class='footer'>
 		Pálinkás jó reggelt kívánok!<br>";
-		$versionGitHub = file_get_contents('https://raw.githubusercontent.com/palinkas-jo-reggelt/hMailServer-SQL-Log/master/VERSION');
+		$versionGitHub = file_get_contents('https://raw.githubusercontent.com/palinkas-jo-reggelt/hMailServer_Log_Searcher/main/VERSION');
 		$versionLocal = file_get_contents('VERSION');
 		if ((float)$versionLocal < (float)$versionGitHub) {
 			echo "
