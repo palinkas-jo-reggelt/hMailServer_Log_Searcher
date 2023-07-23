@@ -5,6 +5,3 @@
 
 # Instructions
  Copy config.dist.php to config.php and fill in the variables.
-
-# Caveats
- Does not work with hmailserver_events.log due to encoding issues. Will update when a solution is found. 
