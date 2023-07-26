@@ -47,6 +47,13 @@
 		return preg_replace($regex, '$1', $str);
 	}
 
+	// https://stackoverflow.com/questions/2510434/format-bytes-to-kilobytes-megabytes-gigabytes#2510459
+	function formatBytes($size, $precision = 1) {
+		$base = log($size, 1024);
+		$suffixes = array('Bytes', 'KB', 'MB', 'GB', 'TB');   
+		return round(pow(1024, $base - floor($base)), $precision).' '.$suffixes[floor($base)];
+	}
+
 	if (isset($_GET['search'])) {$search = trim($_GET['search']);} else {$search = "";}
 	if (isset($_GET['clear'])) {header("Location: ./index.php");}
 
@@ -154,7 +161,7 @@
 	.loglineleft {float:left;}
 	.loglineright {margin-left:50px;}
 	.logGroupContainer {padding-bottom: 10px;}
-	.logGroupHeader {font-weight:bold;text-decoration-line: underline;text-decoration-style: dotted;text-decoration-thickness: 1px;}
+	.logGroupHeader {font-weight:bold;text-decoration-line: underline;text-decoration-style: dotted;text-decoration-thickness: 1px;background:rgba(102, 255, 102, 0.25)}
 
 	@media only screen and (max-width: 629px) {
 		.logline {padding-bottom: 10px;}
@@ -172,6 +179,7 @@
 		</form><br>";
 
 		if (!empty($search)) {
+			$start = microtime(true);
 			$hMS = new COM("hMailServer.Application");
 			$hMS->Authenticate("Administrator", $hMSAdminPass);
 			$logFolder = $hMS->Settings->Directories->LogDirectory;
@@ -180,7 +188,7 @@
 			if (is_dir($logFolder)) {
 				if ($handle = opendir($logFolder)) {
 					while(($file = readdir($handle)) !== FALSE) {
-						if (!preg_match("/^.$|^..$/",$file)) {
+						if (!preg_match("/^[\.]+$/",$file)) {
 							$logfile_array[] = $file;
 						}
 					}
@@ -192,25 +200,32 @@
 			$results = array();
 			$logIterator = 0;
 			$lineIterator = 0;
+			$fileSize = 0;
+			$fileCount = count($logfile_array);
 
 			foreach ($logfile_array as $logFile) {
 				$fileName = $logFolder.'\\'.$logFile;
 				$logLineIterator = 0;
+				$lineCounter = 0;
 				$data = array();
 
 				if (file_exists($fileName)) {
+					$fileSize = $fileSize + filesize($fileName);
 					$encoding = detect_utf_encoding($fileName);
 					$file = fopen($fileName, "r");
 					if ($file) {
 						while(!feof($file)) {
 							$line = fgets($file);
 							if (!is_null($encoding)) {
+								if ($lineCounter > 0) {
+									$line = preg_replace('/[^\x00-\x7F]/', '', $line);
+								}
 								if ($encoding == "UTF-16LE") {
 									$line = mb_convert_encoding ($line, "UTF-8", "UTF-16");
 								} else {
 									$line = mb_convert_encoding ($line, "UTF-8", $encoding);
 								}
-								// $line = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{FFFE}]/u', '', $line);
+								$lineCounter++;
 							}
 							if (preg_match("/".$search."/iu",$line)) {
 								$line = cleanString($line);
@@ -237,11 +252,14 @@
 				}
 			}
 
+			$end = microtime(true);
+			$time = number_format(($end - $start), 2);
+
 			if ($lineIterator === 0) {
 				echo "No Results.";
 			} else {
 				echo "
-		Total results found: ".$lineIterator."<br><br>
+		<b>".number_format($lineIterator)." results</b> found among ".$fileCount." files totalling ".formatBytes($fileSize)." searched in ".$time." seconds<br><br>
 		<div class='resultsFrame'>";
 				foreach ($results as $result) {
 					echo "
