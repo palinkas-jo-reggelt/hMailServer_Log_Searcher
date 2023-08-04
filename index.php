@@ -34,12 +34,12 @@
 	if (is_dir($logFolder)) {
 		if ($handle = opendir($logFolder)) {
 			while(($file = readdir($handle)) !== FALSE) {
-				if (preg_match("/\.log$/",$file)) {
-					$fileNoDate = preg_replace('/_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.log|\.log/','',$file);
+				if (preg_match("/\.(".$log_ext.")$/",$file)) {
+					$fileNoDate = preg_replace("/_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.(".$log_ext.")|\.(".$log_ext.")/","",$file);
 					if (!in_array($fileNoDate, $logType_array, true)){
 						array_push($logType_array, $fileNoDate);
 					}
-					if ((preg_match("/^".$byType."_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.log|^".$byType."\.log/",$file)) || ($byType === "All Log Types")) {
+					if ((preg_match("/^".$byType."_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.(".$log_ext.")|^".$byType."\.(".$log_ext.")/",$file)) || ($byType === "All Log Types")) {
 						preg_match('/(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))/',$file,$matches);
 						if (isset($matches[0])){
 							if (!in_array($matches[0], $logDate_array, true)){
@@ -89,16 +89,17 @@
 		echo "No search term provided.";
 	} else {
 		$start = microtime(true);
-		$regex = "/\w*?".$search."\w*/i";
+		$highlight = "/\w*?".$search."\w*/i";
 		$results = array();
 		$logIterator = 0;
 		$lineIterator = 0;
 		$fileSize = 0;
 		$fileCount = 0;
+		$invalidRegEx = false;
 
 		foreach ($logFile_array as $logFile) {
-			$logFileTypeBase = preg_replace('/_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.log$|\.log$/','',$logFile);
-			$logFileDateBase = preg_replace('/\.log$/','',$logFile);
+			$logFileTypeBase = preg_replace("/_(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))\.(".$log_ext.")$|\.(".$log_ext.")$/","",$logFile);
+			$logFileDateBase = preg_replace("/\.(".$log_ext.")$/","",$logFile);
 			if ((($byType === $logFileTypeBase) || ($byType === "All Log Types")) && ((preg_match($logDateRegEx,$logFileDateBase)) || ($byDate === "All Dates"))) {
 				$fileName = $logFolder.DIRECTORY_SEPARATOR.$logFile;
 				$logLineIterator = 0;
@@ -124,11 +125,20 @@
 								}
 								$lineCounter++;
 							}
-							if (preg_match("/".$search."/iu",$line)) {
+							// if (preg_match("/".$search."/iu",$line)) {
+							$match = @preg_match("/".$search."/iu", $line, $lineMatches);
+							if ($match === false) {
+								$err = preg_last_error();
+								if($err == PREG_INTERNAL_ERROR) {
+									$invalidRegEx = true;
+									break;
+								}
+							} else if ($match) {								
+							
 								$line = cleanString($line);
 								$line = cleanNonUTF8($line);
 								$lineIterator++;
-								$line = preg_replace($regex, "<span style='background:yellow;font-weight:bold;'>$0</span>", $line);
+								$line = preg_replace($highlight, "<span style='background:yellow;font-weight:bold;'>$0</span>", $line);
 
 								if (!isset($results[$logIterator])) {
 									$results[$logIterator][0] = array($logFile, $logLineIterator);
@@ -137,6 +147,8 @@
 								$results[$logIterator][1][] = array($lineIterator, $line);
 
 								$logLineIterator++;
+							} else {
+								// do nothing
 							}
 						}
 						fclose($file);
@@ -156,8 +168,15 @@
 		if ($lineIterator === 0) {
 			echo "
 	<br>
-	<div class='resultsFrame'>
-		No Results.
+	<div class='resultsFrame'>";
+			if ($invalidRegEx) {
+				echo "
+		Invalid Regular Expression Used In Search";
+			} else {
+				echo "
+		No Results";
+			}
+			echo "
 	</div>";
 		} else {
 			echo "
