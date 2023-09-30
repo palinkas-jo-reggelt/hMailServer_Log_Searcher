@@ -18,7 +18,6 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta http-equiv="Content-Style-Type" content="text/css">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" type="text/css" media="all" href="stylesheet.css">
 <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 <style>
 	body {background: #fefefe;font-family: 'Roboto';font-size: 12pt;}
@@ -34,7 +33,7 @@
 	.resultsFrame {font-family: consolas;font-size: 12px;border:1px solid black;border-radius:5px;padding:10px;max-height:70vh;overflow:scroll;overflow-x:hidden;}
 	.logline {display: block;padding-bottom: 0;line-break: auto;word-break: break-all;}
 	.loglineleft {float:left;}
-	.loglineright {margin-left:50px;}
+	.loglineright {margin-left:90px;}
 	.logGroupContainer {padding-bottom: 10px;}
 	.logGroupHeader {font-weight:bold;text-decoration-line: underline;text-decoration-style: dotted;text-decoration-thickness: 1px;background:rgba(102, 255, 102, 0.25)}
 

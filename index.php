@@ -24,9 +24,21 @@
 		$byType_ph = "All Log Types";
 		$logTypeRegEx = "/.*/";
 	}
-
-	$hMS = hMSAuthenticate();
-	$logFolder = $hMS->Settings->Directories->LogDirectory;
+	if (isset($_GET['logFolder'])) {
+		$logFolder = trim($_GET['logFolder']);
+		$logFolder_hidden = "<input type='hidden' name='logFolder' value='".$logFolder."'>";
+	} else {
+		$hMS = hMSAuthenticate();
+		$logFolder = $hMS->Settings->Directories->LogDirectory;
+		$logFolder_hidden = "";
+	}
+	if (isset($_GET['log_ext'])) {
+		$log_ext = trim($_GET['log_ext']);
+		$fileExtension_hidden = "<input type='hidden' name='fileExtension' value='".$log_ext."'>";
+	} else {
+		$log_ext = $defaultFileExt;
+		$fileExtension_hidden = "";
+	}
 
 	$logDate_array = array();
 	$logFile_array = array();
@@ -55,11 +67,11 @@
 	}
 	rsort($logDate_array);
 
-
-
 	echo "
 	<div class='section'>
 		<form action='".$_SERVER['PHP_SELF']."' method='get'>
+			<input type='text' name='logFolder' placeholder='Folder to search...' value='".$logFolder."'>
+			<input type='text' name='log_ext' value='".$log_ext."'>
 			<select name='byType' onchange='this.form.submit()'>
 				<option value='".$byType."'>".$byType_ph."</option>
 				<option value='All Log Types'>All Log Types</option>";
@@ -81,12 +93,17 @@
 	echo "
 			</select>
 			<input type='text' name='search' placeholder='Search' value='".$search."'>
+			".$logFolder_hidden."
 			<input type='submit' value='Search'>
 			<input type='submit' name='clear' value='Clear'>
 		</form>";
 
 	if (empty($search)) {
-		echo "No search term provided.";
+		echo "
+	<br>
+	<div class='resultsFrame'>
+		No Search Term Provided
+	</div>";
 	} else {
 		$start = microtime(true);
 		$highlight = "/\w*?".$search."\w*/i";
@@ -104,6 +121,7 @@
 				$fileName = $logFolder.DIRECTORY_SEPARATOR.$logFile;
 				$logLineIterator = 0;
 				$lineCounter = 0;
+				$linePosition = 1;
 				$data = array();
 
 				if (file_exists($fileName)) {
@@ -144,20 +162,29 @@
 									$results[$logIterator][0] = array($logFile, $logLineIterator);
 								}
 								$results[$logIterator][0][1] = $logLineIterator + 1;
-								$results[$logIterator][1][] = array($lineIterator, $line);
+								$results[$logIterator][1][] = array($linePosition, $line);
 
 								$logLineIterator++;
 							} else {
 								// do nothing
 							}
+							$linePosition++;
 						}
 						fclose($file);
 					} else {
-						echo "Error opening log file: ".$logFile."<br>";
+						echo "
+	<br>
+	<div class='resultsFrame'>
+		Error opening log file: ".$logFile."
+	</div>";
 					}
 					$logIterator++;
 				} else {
-					echo "Log file not found: ".$logFile."<br>";
+					echo "
+	<br>
+	<div class='resultsFrame'>
+		Log file not found: ".$logFile."
+	</div>";
 				}
 			}
 		}
@@ -188,7 +215,7 @@
 				foreach ($result[1] as $lineresult) {
 					echo "
 		<div class='logline'>
-			<div class='loglineleft'>".number_format($lineresult[0]).".</div>
+			<div class='loglineleft'>Line ".number_format($lineresult[0]).":</div>
 			<div class='loglineright'>".$lineresult[1]."</div>
 		</div>";
 				}
